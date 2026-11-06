@@ -238,6 +238,11 @@
   .modal-btn.confirm.spend{ background:var(--warn); color:#1a1410; }
   .modal-btn.confirm.add{ background:var(--good); color:#1a1410; }
   .modal-btn.confirm:disabled{ opacity:0.4; cursor:not-allowed; }
+  .install-btn{
+    display:block; margin:0 auto 14px; background:var(--brass); color:#1a1410; border:none;
+    font-family:var(--f-sans); font-weight:600; font-size:14px; padding:12px 20px;
+    border-radius:12px; cursor:pointer;
+  }
   .cal-opt{
     display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted);
     margin-bottom:12px; cursor:pointer;
@@ -271,6 +276,8 @@
   let resetTimer = null;
   let modalSelection = null; // { notes:{...}, coins:{...} } quantities chosen in the open modal
   let modalMode = null; // 'spend' | 'add'
+  let deferredPrompt = null; // Chrome's install prompt, when available
+  const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const app = document.getElementById('app');
   const modalOverlay = document.getElementById('modalOverlay');
   function fmt(n){ return n.toLocaleString('en-IN'); }
@@ -419,6 +426,7 @@
         <div class="log-list">${logHtml()}</div>
       </section>
       <div class="footer">
+        ${deferredPrompt && !isStandalone() ? `<button class="install-btn" id="installBtn">⬇ Install as app</button>` : ''}
         <button class="reset-btn" id="resetBtn">${confirmingReset ? 'Tap again to clear everything' : 'Reset wallet'}</button>
       </div>
     `;
@@ -430,6 +438,14 @@
       row.querySelector('[data-act="inc"]').addEventListener('click', () => bump(kind, value, 1));
       input.addEventListener('change', () => setQty(kind, value, input.value));
       input.addEventListener('keydown', (e) => { if(e.key === 'Enter') input.blur(); });
+    });
+    const installBtn = document.getElementById('installBtn');
+    if(installBtn) installBtn.addEventListener('click', async () => {
+      if(!deferredPrompt) return;
+      deferredPrompt.prompt();
+      try{ await deferredPrompt.userChoice; }catch(e){}
+      deferredPrompt = null;
+      render();
     });
     document.getElementById('spendBtn').addEventListener('click', () => openModal('spend'));
     document.getElementById('addBtn').addEventListener('click', () => openModal('add'));
@@ -569,12 +585,18 @@
       }
     }
     const sign = isSpend ? '−' : '+';
-    pushLog(`${isSpend ? 'Spent' : 'Added'} ₹${fmt(total)} → ${sign}${parts.join(', ')}`);
-    const msg = `${isSpend ? 'Deducted' : 'Added'} ₹${fmt(total)}: ${sign}${parts.join(', ')}\n${formatStamp(now)}`;
+    const t = totals();
+    const balance = `₹${fmt(t.grand)}`;
+    const verb = isSpend ? 'Spent' : 'Added';
+    pushLog(`${verb} ₹${fmt(total)} → ${sign}${parts.join(', ')} · Balance ${balance}`);
+    const msg = `${isSpend ? 'Deducted' : 'Added'} ₹${fmt(total)}: ${sign}${parts.join(', ')}\nBalance now ${balance}\n${formatStamp(now)}`;
     const wantCal = calPref;
     const calUrl = wantCal ? calendarUrl(
-      `${isSpend ? 'Spent' : 'Added'} ₹${fmt(total)}`,
-      `${sign}${parts.join(', ')}\nWallet balance: ₹${fmt(totals().grand)}`,
+      `${verb} ₹${fmt(total)} · Balance ${balance}`,
+      `${verb} ₹${fmt(total)} (${sign}${parts.join(', ')})\n` +
+      `Total balance: ${balance}\n` +
+      `Notes ₹${fmt(t.notesTotal)} · Coins ₹${fmt(t.coinsTotal)}\n` +
+      `${formatStamp(now)}`,
       now
     ) : null;
     saveState();
@@ -590,6 +612,13 @@
   modalOverlay.addEventListener('click', (e) => {
     if(e.target === modalOverlay) closeModal();
   });
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if(!modalSelection) render();
+  });
+  window.addEventListener('appinstalled', () => { deferredPrompt = null; render(); });
 
   loadState();
 
