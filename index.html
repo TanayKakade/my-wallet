@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>My Wallet</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1410">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Wallet">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+  :root{
+    --bg:#1a1410;
+    --panel:#2a221a;
+    --panel-2:#342a20;
+    --line:rgba(242,232,216,0.09);
+    --text:#f2e8d8;
+    --muted:#a8987c;
+    --muted-2:#7d715c;
+    --brass:#c9a227;
+    --brass-light:#e6c34a;
+    --good:#8fae5a;
+    --warn:#d97a5a;
+    --note-500:#9c9284;
+    --note-200:#f0b62e;
+    --note-100:#a78bc0;
+    --note-50:#3d8fd6;
+    --note-20:#b7c93c;
+    --note-10:#8b5a34;
+    --f-display:'Fraunces', serif;
+    --f-mono:'IBM Plex Mono', monospace;
+    --f-sans:'IBM Plex Sans', sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:var(--bg); }
+  body{
+    font-family:var(--f-sans);
+    color:var(--text);
+    -webkit-tap-highlight-color:transparent;
+    min-height:100vh;
+    overscroll-behavior-y:contain;
+  }
+  ::selection{ background:var(--brass); color:#1a1410; }
+  .app{
+    max-width:440px;
+    margin:0 auto;
+    padding:22px 16px 40px;
+    background:var(--bg);
+    border-radius:18px;
+    min-height:100%;
+  }
+  /* ---------- header ---------- */
+  header{ text-align:center; padding:6px 0 22px; border-bottom:1px solid var(--line); margin-bottom:20px; }
+  .eyebrow{
+    font-family:var(--f-sans); font-size:11px; letter-spacing:0.18em; font-weight:600;
+    color:var(--muted); text-transform:uppercase; margin-bottom:8px;
+  }
+  .total-amount{
+    font-family:var(--f-display); font-weight:600; font-size:46px; line-height:1;
+    letter-spacing:-0.01em;
+  }
+  .total-amount sup{ font-size:22px; font-weight:500; color:var(--muted); top:-0.6em; }
+  .sub-split{ margin-top:10px; font-family:var(--f-mono); font-size:13px; color:var(--muted); }
+  .sub-split b{ color:var(--text); font-weight:500; }
+  .sub-split .dot{ margin:0 8px; color:var(--muted-2); }
+  /* ---------- quick actions ---------- */
+  .quick{ margin-bottom:26px; }
+  .quick-row{ display:flex; gap:10px; }
+  .qbtn{
+    flex:1;
+    border:none; border-radius:12px; font-family:var(--f-sans); font-weight:600; font-size:15px;
+    padding:14px 16px; cursor:pointer; transition:transform .08s ease, filter .15s ease;
+  }
+  .qbtn:active{ transform:scale(0.96); }
+  .qbtn.spend{ background:var(--warn); color:#1a1410; }
+  .qbtn.add{ background:var(--good); color:#1a1410; }
+  .qbtn:focus-visible{ outline:2px solid var(--brass-light); outline-offset:2px; }
+  .quick-hint{ font-size:11px; color:var(--muted-2); margin-top:10px; text-align:center; }
+  .feedback{
+    margin-top:10px; font-family:var(--f-mono); font-size:12.5px; line-height:1.5;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:10px 12px; color:var(--muted); display:none;
+  }
+  .feedback.show{ display:block; white-space:pre-line; }
+  .feedback.warn{ color:var(--warn); }
+  .feedback.good{ color:var(--good); }
+  /* ---------- denom sections ---------- */
+  .denom-section{ margin-bottom:24px; }
+  .denom-section h2{
+    font-family:var(--f-display); font-weight:500; font-size:15px; letter-spacing:0.04em;
+    text-transform:uppercase; color:var(--muted); margin:0 0 10px 2px;
+  }
+  .denom-list{ display:flex; flex-direction:column; gap:6px; }
+  .row{
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:9px 10px; transition:background .3s ease;
+  }
+  .row.flash{ background:var(--panel-2); }
+  .swatch-note{
+    width:42px; height:28px; border-radius:5px; position:relative; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--f-mono); font-weight:600; font-size:11px; color:rgba(0,0,0,0.55);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15);
+  }
+  .swatch-note::after{
+    content:''; position:absolute; inset:0; border-radius:5px;
+    background:linear-gradient(115deg, transparent 46%, rgba(255,255,255,0.22) 50%, transparent 54%);
+  }
+  .swatch-coin{
+    width:30px; height:30px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--f-mono); font-weight:600; color:#3a2e12;
+    background:radial-gradient(circle at 32% 28%, var(--brass-light), var(--brass) 60%, #8a6d1a 100%);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,0.25);
+  }
+  .row-label{ font-family:var(--f-mono); font-size:13px; color:var(--muted); width:50px; flex-shrink:0; }
+  .stepper{ display:flex; align-items:center; gap:6px; margin-left:auto; }
+  .step-btn{
+    width:30px; height:30px; border-radius:8px; border:1px solid var(--line);
+    background:var(--panel-2); color:var(--text); font-size:16px; font-weight:600;
+    cursor:pointer; line-height:1; transition:transform .08s ease, background .15s ease;
+  }
+  .step-btn:active{ transform:scale(0.9); background:var(--brass); color:#1a1410; }
+  .step-btn:focus-visible{ outline:2px solid var(--brass-light); outline-offset:1px; }
+  .step-btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  .step-btn:disabled:active{ transform:none; background:var(--panel-2); }
+  .qty-input{
+    width:40px; text-align:center; background:transparent; border:none;
+    color:var(--text); font-family:var(--f-mono); font-size:15px; font-weight:500;
+    -moz-appearance:textfield;
+  }
+  .qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button{
+    -webkit-appearance:none; margin:0;
+  }
+  .qty-input:focus{ outline:none; color:var(--brass-light); }
+  .row-subtotal{
+    font-family:var(--f-mono); font-size:13.5px; color:var(--muted); min-width:64px; text-align:right;
+    flex-shrink:0;
+  }
+  .row-subtotal.zero{ color:var(--muted-2); }
+  /* ---------- log ---------- */
+  .log-section h2{
+    font-family:var(--f-display); font-weight:500; font-size:15px; letter-spacing:0.04em;
+    text-transform:uppercase; color:var(--muted); margin:0 0 10px 2px;
+  }
+  .log-list{ display:flex; flex-direction:column; gap:4px; }
+  .log-empty{ font-family:var(--f-sans); font-size:13px; color:var(--muted-2); padding:6px 2px; }
+  .log-entry{
+    font-family:var(--f-mono); font-size:12px; color:var(--muted); padding:8px 10px;
+    background:var(--panel); border-radius:8px; display:flex; flex-direction:column; gap:4px;
+  }
+  .log-entry .txt{ color:var(--text); }
+  .log-entry .time{ color:var(--brass); font-size:11px; letter-spacing:0.02em; }
+  /* ---------- footer ---------- */
+  .footer{ margin-top:28px; text-align:center; }
+  .reset-btn{
+    background:none; border:1px solid var(--line); color:var(--muted-2);
+    font-family:var(--f-sans); font-size:12px; padding:8px 14px; border-radius:20px; cursor:pointer;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .reset-btn.confirming{ border-color:var(--warn); color:var(--warn); }
+  .loading{ text-align:center; padding:60px 0; color:var(--muted); font-family:var(--f-mono); font-size:13px; }
+  .storage-warning{
+    font-family:var(--f-mono); font-size:11.5px; color:var(--warn);
+    text-align:center; padding:8px 12px; margin-bottom:14px;
+    background:var(--panel); border:1px solid var(--warn); border-radius:10px; display:none;
+  }
+  .storage-warning.show{ display:block; }
+  /* ---------- modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(10,8,6,0.72);
+    display:none; align-items:flex-end; justify-content:center; z-index:100;
+    padding:0;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-panel{
+    width:100%; max-width:440px; max-height:86vh;
+    background:var(--bg); border-radius:20px 20px 0 0;
+    border:1px solid var(--line); border-bottom:none;
+    display:flex; flex-direction:column;
+    animation:slideUp .18s ease;
+  }
+  @keyframes slideUp{ from{ transform:translateY(16px); opacity:0.6; } to{ transform:translateY(0); opacity:1; } }
+  .modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 18px 12px; border-bottom:1px solid var(--line); flex-shrink:0;
+  }
+  .modal-header h3{
+    font-family:var(--f-display); font-weight:600; font-size:19px; margin:0;
+  }
+  .modal-header h3.spend-title{ color:var(--warn); }
+  .modal-header h3.add-title{ color:var(--good); }
+  .modal-close{
+    width:30px; height:30px; border-radius:50%; border:1px solid var(--line);
+    background:var(--panel); color:var(--muted); font-size:18px; line-height:1;
+    cursor:pointer;
+  }
+  .modal-body{ padding:14px 18px; overflow-y:auto; flex:1; }
+  .modal-group-label{
+    font-family:var(--f-display); font-weight:500; font-size:13px; letter-spacing:0.04em;
+    text-transform:uppercase; color:var(--muted); margin:14px 0 8px 2px;
+  }
+  .modal-group-label:first-child{ margin-top:0; }
+  .modal-row{
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:8px 10px; margin-bottom:6px;
+  }
+  .modal-row.at-max .step-btn[data-act="inc"]{ opacity:0.35; }
+  .modal-row-label{ font-family:var(--f-mono); font-size:13px; color:var(--muted); flex-shrink:0; width:50px; }
+  .modal-avail{ display:block; font-size:10.5px; color:var(--muted-2); margin-top:1px; }
+  .modal-row-subtotal{
+    font-family:var(--f-mono); font-size:13px; color:var(--muted); min-width:58px; text-align:right; flex-shrink:0;
+  }
+  .modal-footer{
+    padding:14px 18px calc(16px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line); flex-shrink:0;
+    background:var(--bg);
+  }
+  .modal-total{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:var(--f-sans); font-size:13px; color:var(--muted); margin-bottom:12px;
+  }
+  .modal-total b{ font-family:var(--f-mono); font-size:20px; color:var(--text); }
+  .modal-actions{ display:flex; gap:10px; }
+  .modal-btn{
+    flex:1; border:none; border-radius:12px; font-family:var(--f-sans); font-weight:600;
+    font-size:14px; padding:13px; cursor:pointer; transition:transform .08s ease;
+  }
+  .modal-btn:active{ transform:scale(0.96); }
+  .modal-btn.cancel{ background:var(--panel-2); color:var(--muted); }
+  .modal-btn.confirm.spend{ background:var(--warn); color:#1a1410; }
+  .modal-btn.confirm.add{ background:var(--good); color:#1a1410; }
+  .modal-btn.confirm:disabled{ opacity:0.4; cursor:not-allowed; }
+  .cal-opt{
+    display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted);
+    margin-bottom:12px; cursor:pointer;
+  }
+  .cal-opt input{ width:18px; height:18px; accent-color:var(--brass); }
+  .cal-link{ color:var(--brass-light); font-weight:600; display:inline-block; margin-top:6px; }
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="loading" id="loadingMsg">Opening your wallet…</div>
+</div>
+<div class="modal-overlay" id="modalOverlay"></div>
+<script>
+(function(){
+  const STORAGE_KEY = 'wallet-data';
+  const NOTES = [500,200,100,50,20,10];
+  const COINS = [20,10,5,2,1];
+  const NOTE_COLOR = {500:'var(--note-500)',200:'var(--note-200)',100:'var(--note-100)',50:'var(--note-50)',20:'var(--note-20)',10:'var(--note-10)'};
+  const COIN_SIZE = {20:34,10:30,5:27,2:24,1:21};
+  let state = {
+    notes:{500:0,200:0,100:0,50:0,20:0,10:0},
+    coins:{20:0,10:0,5:0,2:0,1:0},
+    log:[]
+  };
+  let storageOk = true;
+  let confirmingReset = false;
+  let resetTimer = null;
+  let modalSelection = null; // { notes:{...}, coins:{...} } quantities chosen in the open modal
+  let modalMode = null; // 'spend' | 'add'
+  const app = document.getElementById('app');
+  const modalOverlay = document.getElementById('modalOverlay');
+  function fmt(n){ return n.toLocaleString('en-IN'); }
+  function totals(){
+    let notesTotal = 0, coinsTotal = 0;
+    NOTES.forEach(v => notesTotal += v * (state.notes[v]||0));
+    COINS.forEach(v => coinsTotal += v * (state.coins[v]||0));
+    return { notesTotal, coinsTotal, grand: notesTotal + coinsTotal };
+  }
+  function timeNow(){
+    return new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  }
+  // Day + date + time, e.g. "Friday, 6 Nov 2026 · 04:40 pm"
+  function formatStamp(ms){
+    const d = new Date(ms);
+    const datePart = d.toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'short', year:'numeric'});
+    const timePart = d.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
+    return `${datePart} · ${timePart}`;
+  }
+  function pushLog(text){
+    state.log.unshift({ at: Date.now(), ts: timeNow(), text });
+    state.log = state.log.slice(0, 50);
+  }
+  // ---------- Local persistence (browser localStorage) ----------
+  // Runs fully on your device — no server, no account. Data is read
+  // from and written to this browser's localStorage.
+  function loadState(){
+    try{
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        state.notes = Object.assign(state.notes, parsed.notes || {});
+        state.coins = Object.assign(state.coins, parsed.coins || {});
+        state.log = parsed.log || [];
+      }
+      storageOk = true;
+    }catch(e){
+      storageOk = (typeof window.localStorage !== 'undefined');
+    }
+    render();
+  }
+  function saveState(){
+    try{
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      storageOk = true;
+    }catch(e){
+      storageOk = false;
+      render();
+    }
+  }
+  function setQty(kind, value, qty){
+    qty = Math.max(0, Math.floor(Number(qty)) || 0);
+    state[kind][value] = qty;
+    saveState();
+    render();
+  }
+  function bump(kind, value, delta){
+    const cur = state[kind][value] || 0;
+    setQty(kind, value, cur + delta);
+  }
+  let feedbackTimer = null;
+  function showFeedback(msg, kind, link){
+    const el = document.getElementById('actionFeedback');
+    if(!el) return;
+    el.textContent = msg;
+    if(link){
+      el.appendChild(document.createElement('br'));
+      const a = document.createElement('a');
+      a.href = link; a.target = '_blank'; a.rel = 'noopener';
+      a.className = 'cal-link';
+      a.textContent = '📅 Save to Google Calendar';
+      el.appendChild(a);
+    }
+    el.className = 'feedback show' + (kind ? ' ' + kind : '');
+    clearTimeout(feedbackTimer);
+    feedbackTimer = setTimeout(() => { el.classList.remove('show'); }, link ? 20000 : 7000);
+  }
+  // ---------- Google Calendar (one-tap save) ----------
+  let calPref = true;
+  try{ calPref = window.localStorage.getItem('wallet-cal-pref') !== 'off'; }catch(e){}
+  function gcalDate(ms){
+    return new Date(ms).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  }
+  function calendarUrl(title, details, ms){
+    const q = new URLSearchParams({
+      action:'TEMPLATE',
+      text:title,
+      details:details,
+      dates: gcalDate(ms) + '/' + gcalDate(ms + 15*60000)
+    });
+    return 'https://calendar.google.com/calendar/render?' + q.toString();
+  }
+  function rowHtml(kind, value){
+    const qty = state[kind][value] || 0;
+    const subtotal = qty * value;
+    const swatch = kind === 'notes'
+      ? `<div class="swatch-note" style="background:${NOTE_COLOR[value]}">₹${value}</div>`
+      : `<div class="swatch-coin" style="width:${COIN_SIZE[value]}px;height:${COIN_SIZE[value]}px;font-size:${value>=10?11:10}px">₹${value}</div>`;
+    return `
+      <div class="row" data-kind="${kind}" data-value="${value}">
+        ${swatch}
+        <div class="row-label">₹${value}</div>
+        <div class="stepper">
+          <button class="step-btn" data-act="dec" aria-label="Decrease ₹${value} count">−</button>
+          <input class="qty-input" type="number" inputmode="numeric" min="0" value="${qty}" aria-label="₹${value} count">
+          <button class="step-btn" data-act="inc" aria-label="Increase ₹${value} count">+</button>
+        </div>
+        <div class="row-subtotal ${subtotal===0?'zero':''}">₹${fmt(subtotal)}</div>
+      </div>`;
+  }
+  function logHtml(){
+    if(state.log.length === 0){
+      return `<div class="log-empty">Nothing logged yet — spend or add cash above and it'll show here.</div>`;
+    }
+    return state.log.slice(0,10).map(l => `
+      <div class="log-entry"><span class="txt">${l.text}</span><span class="time">${l.at ? formatStamp(l.at) : l.ts}</span></div>
+    `).join('');
+  }
+  function render(){
+    const t = totals();
+    app.innerHTML = `
+      ${!storageOk ? `<div class="storage-warning show">Local storage isn't available in this browser/mode, so changes won't be saved after you close the page.</div>` : ''}
+      <header>
+        <div class="eyebrow">My Wallet</div>
+        <div class="total-amount"><sup>₹</sup>${fmt(t.grand)}</div>
+        <div class="sub-split"><b>₹${fmt(t.notesTotal)}</b> notes<span class="dot">·</span><b>₹${fmt(t.coinsTotal)}</b> coins</div>
+      </header>
+      <section class="quick">
+        <div class="quick-row">
+          <button class="qbtn spend" id="spendBtn">Spend</button>
+          <button class="qbtn add" id="addBtn">Add</button>
+        </div>
+        <div class="quick-hint">Pick exactly which notes and coins are involved.</div>
+        <div class="feedback" id="actionFeedback"></div>
+      </section>
+      <section class="denom-section">
+        <h2>Notes</h2>
+        <div class="denom-list">${NOTES.map(v => rowHtml('notes', v)).join('')}</div>
+      </section>
+      <section class="denom-section">
+        <h2>Coins</h2>
+        <div class="denom-list">${COINS.map(v => rowHtml('coins', v)).join('')}</div>
+      </section>
+      <section class="log-section">
+        <h2>Recent activity</h2>
+        <div class="log-list">${logHtml()}</div>
+      </section>
+      <div class="footer">
+        <button class="reset-btn" id="resetBtn">${confirmingReset ? 'Tap again to clear everything' : 'Reset wallet'}</button>
+      </div>
+    `;
+    app.querySelectorAll('.row').forEach(row => {
+      const kind = row.dataset.kind;
+      const value = Number(row.dataset.value);
+      const input = row.querySelector('.qty-input');
+      row.querySelector('[data-act="dec"]').addEventListener('click', () => bump(kind, value, -1));
+      row.querySelector('[data-act="inc"]').addEventListener('click', () => bump(kind, value, 1));
+      input.addEventListener('change', () => setQty(kind, value, input.value));
+      input.addEventListener('keydown', (e) => { if(e.key === 'Enter') input.blur(); });
+    });
+    document.getElementById('spendBtn').addEventListener('click', () => openModal('spend'));
+    document.getElementById('addBtn').addEventListener('click', () => openModal('add'));
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if(!confirmingReset){
+        confirmingReset = true;
+        render();
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => { confirmingReset = false; render(); }, 3000);
+      }else{
+        confirmingReset = false;
+        NOTES.forEach(v => state.notes[v] = 0);
+        COINS.forEach(v => state.coins[v] = 0);
+        pushLog('Wallet reset to ₹0');
+        saveState();
+        render();
+      }
+    });
+  }
+
+  // ---------- Spend / Add picker modal ----------
+  function modalRowHtml(kind, value){
+    const have = state[kind][value] || 0;
+    const qty = modalSelection[kind][value] || 0;
+    const atMax = modalMode === 'spend' && qty >= have;
+    const swatch = kind === 'notes'
+      ? `<div class="swatch-note" style="background:${NOTE_COLOR[value]}">₹${value}</div>`
+      : `<div class="swatch-coin" style="width:${COIN_SIZE[value]}px;height:${COIN_SIZE[value]}px;font-size:${value>=10?11:10}px">₹${value}</div>`;
+    return `
+      <div class="modal-row ${atMax?'at-max':''}" data-kind="${kind}" data-value="${value}">
+        ${swatch}
+        <div class="modal-row-label">₹${value}${modalMode==='spend' ? `<span class="modal-avail">have ${have}</span>` : ''}</div>
+        <div class="stepper">
+          <button class="step-btn" data-act="dec" aria-label="Decrease ₹${value}">−</button>
+          <input class="qty-input modal-qty-input" type="number" inputmode="numeric" min="0" ${modalMode==='spend'?`max="${have}"`:''} value="${qty}" aria-label="₹${value} quantity">
+          <button class="step-btn" data-act="inc" aria-label="Increase ₹${value}" ${atMax?'disabled':''}>+</button>
+        </div>
+        <div class="modal-row-subtotal">₹${fmt(qty*value)}</div>
+      </div>`;
+  }
+  function modalTotal(){
+    let total = 0;
+    NOTES.forEach(v => total += v * (modalSelection.notes[v]||0));
+    COINS.forEach(v => total += v * (modalSelection.coins[v]||0));
+    return total;
+  }
+  function renderModal(){
+    const isSpend = modalMode === 'spend';
+    modalOverlay.innerHTML = `
+      <div class="modal-panel">
+        <div class="modal-header">
+          <h3 class="${isSpend?'spend-title':'add-title'}">${isSpend ? 'Spend cash' : 'Add cash'}</h3>
+          <button class="modal-close" id="modalCloseBtn" aria-label="Close">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-group-label">Notes</div>
+          ${NOTES.map(v => modalRowHtml('notes', v)).join('')}
+          <div class="modal-group-label">Coins</div>
+          ${COINS.map(v => modalRowHtml('coins', v)).join('')}
+        </div>
+        <div class="modal-footer">
+          <label class="cal-opt"><input type="checkbox" id="calOpt" ${calPref?'checked':''}> Also save to Google Calendar</label>
+          <div class="modal-total"><span>Total ${isSpend?'to spend':'to add'}</span><b>₹${fmt(modalTotal())}</b></div>
+          <div class="modal-actions">
+            <button class="modal-btn cancel" id="modalCancelBtn">Cancel</button>
+            <button class="modal-btn confirm ${modalMode}" id="modalConfirmBtn" ${modalTotal()===0?'disabled':''}>Confirm</button>
+          </div>
+        </div>
+      </div>
+    `;
+    modalOverlay.querySelectorAll('.modal-row').forEach(row => {
+      const kind = row.dataset.kind;
+      const value = Number(row.dataset.value);
+      const input = row.querySelector('.modal-qty-input');
+      const have = state[kind][value] || 0;
+      row.querySelector('[data-act="dec"]').addEventListener('click', () => modalBump(kind, value, -1, have));
+      row.querySelector('[data-act="inc"]').addEventListener('click', () => modalBump(kind, value, 1, have));
+      input.addEventListener('change', () => modalSetQty(kind, value, input.value, have));
+      input.addEventListener('keydown', (e) => { if(e.key === 'Enter') input.blur(); });
+    });
+    document.getElementById('calOpt').addEventListener('change', (e) => {
+      calPref = e.target.checked;
+      try{ window.localStorage.setItem('wallet-cal-pref', calPref ? 'on' : 'off'); }catch(err){}
+    });
+    document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+    document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+    if(confirmBtn) confirmBtn.addEventListener('click', confirmModal);
+  }
+  function modalSetQty(kind, value, qty, have){
+    qty = Math.max(0, Math.floor(Number(qty)) || 0);
+    if(modalMode === 'spend') qty = Math.min(qty, have);
+    modalSelection[kind][value] = qty;
+    renderModal();
+  }
+  function modalBump(kind, value, delta, have){
+    const cur = modalSelection[kind][value] || 0;
+    modalSetQty(kind, value, cur + delta, have);
+  }
+  function openModal(mode){
+    modalMode = mode;
+    modalSelection = {
+      notes:{500:0,200:0,100:0,50:0,20:0,10:0},
+      coins:{20:0,10:0,5:0,2:0,1:0}
+    };
+    renderModal();
+    modalOverlay.classList.add('show');
+  }
+  function closeModal(){
+    modalOverlay.classList.remove('show');
+    modalOverlay.innerHTML = '';
+    modalSelection = null;
+    modalMode = null;
+  }
+  function confirmModal(){
+    const total = modalTotal();
+    if(total <= 0) return;
+    const parts = [];
+    const list = [
+      ...NOTES.map(v => ({type:'notes', value:v})),
+      ...COINS.map(v => ({type:'coins', value:v}))
+    ];
+    const now = Date.now();
+    const isSpend = modalMode === 'spend';
+    for(const item of list){
+      const qty = modalSelection[item.type][item.value] || 0;
+      if(qty <= 0) continue;
+      const have = state[item.type][item.value] || 0;
+      if(isSpend){
+        const take = Math.min(qty, have); // safety clamp
+        if(take <= 0) continue;
+        state[item.type][item.value] = have - take;
+        parts.push(`${take}×₹${item.value}`);
+      }else{
+        state[item.type][item.value] = have + qty;
+        parts.push(`${qty}×₹${item.value}`);
+      }
+    }
+    const sign = isSpend ? '−' : '+';
+    pushLog(`${isSpend ? 'Spent' : 'Added'} ₹${fmt(total)} → ${sign}${parts.join(', ')}`);
+    const msg = `${isSpend ? 'Deducted' : 'Added'} ₹${fmt(total)}: ${sign}${parts.join(', ')}\n${formatStamp(now)}`;
+    const wantCal = calPref;
+    const calUrl = wantCal ? calendarUrl(
+      `${isSpend ? 'Spent' : 'Added'} ₹${fmt(total)}`,
+      `${sign}${parts.join(', ')}\nWallet balance: ₹${fmt(totals().grand)}`,
+      now
+    ) : null;
+    saveState();
+    closeModal();
+    render();                       // re-draw first, then show the message
+    if(wantCal){
+      const w = window.open(calUrl, '_blank');   // still inside the tap, so not blocked
+      showFeedback(msg, 'good', w ? null : calUrl);
+    }else{
+      showFeedback(msg, 'good');
+    }
+  }
+  modalOverlay.addEventListener('click', (e) => {
+    if(e.target === modalOverlay) closeModal();
+  });
+
+  loadState();
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {
+        // offline caching just won't be available; the app still works
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
