@@ -1,6 +1,6 @@
 {
-  "name": "My Wallet",
-  "short_name": "My Wallet",
+  "name": "Jebkharcha",
+  "short_name": "Jebkharcha",
   "description": "Track your cash — notes and coins — right on your device.",
   "start_url": "./index.html",
   "scope": "./",
